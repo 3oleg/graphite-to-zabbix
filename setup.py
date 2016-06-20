@@ -7,7 +7,7 @@ setup(name='graphite-to-zabbix',
       author = 'tgavriltg',
       author_email = 'tgavriltg@gmail.com',
       url = 'https://github.com/tgavriltg/graphite-to-zabbix',
-      install_requires = ["argparse","py-zabbix"],
+      install_requires = ["argparse","py-zabbix","PyYAML"],
       scripts = ['g2zproxy'],
       packages = find_packages(),
      )
