@@ -20,11 +20,11 @@ Note that g2zproxy will work with zabbix web api specified in `-z` argument, but
 ### Create zabbix metrics
 First you need create few metrics to monitor in zabbix. I suppose you familar with zabbix template system. So, I just show to how to make one Item.
 
-Suppose you want have an zabbix alert for some data from graphite. G2ZProxy will join `hostname` and graphite[`key`] from zabbix, and match it with graphite key.
+Suppose you want have an zabbix alert for some data from graphite. G2ZProxy will get key graphite[`key`] from zabbix, and match it with graphite key.
 An example graphite key `p-mem001.memcached.memcached_items-current.value` will be match to zabbix
 ```
 host: p-mem001
-key: graphite[memcached.memcached_items-current.value]
+key: graphite[p-mem001.memcached.memcached_items-current.value]
 ```
 
 #### Graphite requst with functions can be written in that manner.
