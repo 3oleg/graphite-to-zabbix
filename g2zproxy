@@ -40,6 +40,7 @@ class G2ZProxy(object):
                 zabbix_url='http://localhost',
                 zabbix_user='admin',
                 zabbix_pass='zabbix',
+                zabbix_server='127.0.0.1',
                 graphite_url='http://localhost',
                 threads=1,
                 aggregation_function='{metric}'):
@@ -49,6 +50,7 @@ class G2ZProxy(object):
         # Takes needed metric from zabbix
         self.pattern = pattern
         self.zabbix_url = zabbix_url
+        self.zabbix_server = zabbix_server
         self.graphite_url = graphite_url + '/render?from=-5minutes&rawData=true&target={req}&format=json'
         self.aggregation_function = aggregation_function
         self.zapi = ZabbixAPI(self.zabbix_url, user=zabbix_user, password=zabbix_pass)
@@ -135,10 +137,10 @@ class G2ZProxy(object):
         params = map(lambda x: x.strip(), metric['metric'].split(';'))
 
         if len(params) > 1:
-            req_metric = '{0}.{1}'.format(metric['host'], params[0])
+            req_metric = '{0}'.format(params[0])
             req = params[1].format(metric=req_metric)
         else:
-            req = '{host}.{metric}'
+            req = '{metric}'
 
         req = req.format(host=metric['host'], metric=metric['metric'])
         req = self.aggregation_function.format(metric=req)
@@ -165,7 +167,7 @@ class G2ZProxy(object):
                 data = yaml.load(res)
             except Exception as e:
                 # if error, process next metric and print exception
-		logger.error('%s', e)
+                logger.error('%s', e)
                 return #continue
             finally:
                 e_time = time.time() - s_time
@@ -183,7 +185,7 @@ class G2ZProxy(object):
                     # We are only interested in latest datapoint
                     data = datapoints[-1]
                     # Update metric record
-		    logger.debug({'value': data[0], 'time': data[1] })
+                    logger.debug({'value': data[0], 'time': data[1] })
                     metric.update({ 'value': data[0], 'time': data[1] })
 
         pool = Pool(processes=self.threads)
@@ -214,7 +216,10 @@ class G2ZProxy(object):
                 metric = '{0}[{1}]'.format(self.key, m['metric'])
                 msg.append(ZabbixMetric(m['host'], metric, m['value'], m['time']))
 
-        ZabbixSender(use_config=True).send(msg)
+        if self.zabbix_server == "127.0.0.1":
+            ZabbixSender(use_config=True).send(msg)
+        else:
+            ZabbixSender(self.zabbix_server).send(msg)
         print(len(self.metrics))
 
 if __name__ == '__main__':
@@ -229,6 +234,8 @@ if __name__ == '__main__':
             help='Specify zabbix user.')
     argparser.add_argument('-zp', '--zabbix-pass', default='zabbix',
             help='Specify zabbix password.')
+    argparser.add_argument('-zs', '--zabbix-server', default='127.0.0.1',
+            help='Specify zabbix server.if there is no set, then  get from zabbix-agent configure file.')
     argparser.add_argument('-g', '--graphite-url', default='http://localhost',
             help='Specify URL to Graphite.')
     argparser.add_argument('-t', '--threads', default=50, type=int,
@@ -246,6 +253,7 @@ if __name__ == '__main__':
     G2ZProxy(zabbix_url = args.zabbix_url,
             zabbix_user = args.zabbix_user,
             zabbix_pass = args.zabbix_pass,
+            zabbix_server = args.zabbix_server,
             graphite_url = args.graphite_url,
             threads = args.threads,
             aggregation_function = args.aggregation_function)
